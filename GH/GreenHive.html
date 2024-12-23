@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenHive</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f8f5;
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        .form-section, .leaderboard-section {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-section {
+            flex: 2;
+        }
+
+        .leaderboard-section {
+            flex: 1;
+            text-align: center;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            min-height: 100px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .leaderboard-section ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .leaderboard-section li {
+            background: #f9f9f9;
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .execution-time {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Selamat Datang di GreenHive</h1>
+    </header>
+
+    <div class="container">
+        <div class="form-section">
+            <h2>Input Data</h2>
+            <form id="data-form">
+                <div class="form-group">
+                    <label for="data-input">Masukkan Data (Format: Nama Tim, Berat Sampah\nBaris Baru untuk Data Baru)</label>
+                    <textarea id="data-input" placeholder="Contoh:\nTim A, 100\nTim B, 200"></textarea>
+                </div>
+                <button type="submit">Submit</button>
+            </form>
+        </div>
+
+        <div class="leaderboard-section">
+            <h2>Leaderboard</h2>
+            <ul id="leaderboard">
+                <!-- Leaderboard akan diisi setelah submit -->
+            </ul>
+            <button onclick="sortIteratively()">Sort Secara Iteratif</button>
+            <button onclick="sortAndDisplayRecursively()">Sort Secara Rekursif</button>
+            <div id="execution-time" class="execution-time"></div>
+        </div>
+    </div>
+
+    <script>
+    let results = [];
+
+    document.querySelector('#data-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const dataInput = document.querySelector('#data-input').value;
+        const lines = dataInput.split('\n');
+
+        results = [];
+        lines.forEach(line => {
+            const [name, weight] = line.split(',').map(item => item.trim());
+            if (name && weight) {
+                const points = parseInt(weight) * 5;
+                results.push({ name, points });
+            }
+        });
+
+        // Clear the leaderboard initially
+        const leaderboard = document.querySelector('#leaderboard');
+        leaderboard.innerHTML = '';
+    });
+
+    function updateLeaderboard(data) {
+        const leaderboard = document.querySelector('#leaderboard');
+        leaderboard.innerHTML = '';
+
+        // Sort the data but do not limit to 100 here
+        const sortedData = data.sort((a, b) => b.points - a.points);
+        
+        // Display only the top 100 entries
+        const topResults = sortedData.slice(0, 100);
+        topResults.forEach(result => {
+            const listItem = document.createElement('li');
+            listItem.textContent = `${result.name}: ${result.points} poin`;
+            leaderboard.appendChild(listItem);
+        });
+    }
+
+    function measureExecutionTime(callback) {
+    const start = performance.now();
+    callback();
+    const end = performance.now();
+    const executionTime = (end - start) * 10000; // Convert to microseconds
+    document.querySelector('#execution-time').textContent = `Waktu Eksekusi: ${executionTime.toFixed(2)} µs`;
+}
+
+
+    function sortIteratively() {
+        measureExecutionTime(() => {
+            const sorted = [...results]; // Copy original results
+            for (let i = 0; i < sorted.length - 1; i++) {
+                for (let j = 0; j < sorted.length - i - 1; j++) {
+                    if (sorted[j].points < sorted[j + 1].points) {
+                        [sorted[j], sorted[j + 1]] = [sorted[j + 1], sorted[j]];
+                    }
+                }
+            }
+            updateLeaderboard(sorted); // Update leaderboard with sorted data
+        });
+    }
+
+    function mergeSort(arr) {
+        if (arr.length <= 1) return arr;
+
+        const mid = Math.floor(arr.length / 2);
+        const left = mergeSort(arr.slice(0, mid));
+        const right = mergeSort(arr.slice(mid));
+
+        return merge(left, right);
+    }
+
+    function merge(left, right) {
+        let result = [];
+        let leftIndex = 0;
+        let rightIndex = 0;
+
+        while (leftIndex < left.length && rightIndex < right.length) {
+            if (left[leftIndex].points >= right[rightIndex].points) {
+                result.push(left[leftIndex]);
+                leftIndex++;
+            } else {
+                result.push(right[rightIndex]);
+                rightIndex++;
+            }
+        }
+
+        return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
+    }
+
+    function sortAndDisplayRecursively() {
+        measureExecutionTime(() => {
+            const sorted = mergeSort(results); // Sort all data
+            updateLeaderboard(sorted); // Update leaderboard with sorted data
+        });
+    }
+</script>
+
+</body>
+</html>
